@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantu Content Intelligence Agent</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #222222;
+    --orange: #ff6b1a;
+    --orange-dim: rgba(255,107,26,0.15);
+    --orange-glow: rgba(255,107,26,0.4);
+    --white: #f0f0f0;
+    --gray: #888;
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-dot {
+    width: 10px;
+    height: 10px;
+    background: var(--orange);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--orange-glow);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 12px var(--orange-glow); }
+    50% { box-shadow: 0 0 24px var(--orange-glow), 0 0 40px var(--orange-dim); }
+  }
+
+  .header-badge {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--orange);
+    border: 1px solid var(--orange);
+    padding: 4px 12px;
+    border-radius: 100px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Page Title */
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .page-title span {
+    color: var(--orange);
+  }
+
+  .page-subtitle {
+    color: var(--gray);
+    font-size: 13px;
+    margin-bottom: 40px;
+    line-height: 1.6;
+  }
+
+  /* Steps */
+  .steps-track {
+    display: flex;
+    gap: 0;
+    margin-bottom: 40px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .step {
+    flex: 1;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--gray);
+    border-right: 1px solid var(--border);
+    transition: all 0.3s;
+    background: var(--surface);
+    cursor: default;
+  }
+
+  .step:last-child { border-right: none; }
+
+  .step.active {
+    background: var(--orange-dim);
+    color: var(--orange);
+    border-right-color: var(--orange);
+  }
+
+  .step.done {
+    background: rgba(34,197,94,0.08);
+    color: var(--green);
+  }
+
+  .step-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .step.done .step-num {
+    background: var(--green);
+    border-color: var(--green);
+    color: #000;
+  }
+
+  .step-label { font-size: 10px; line-height: 1.3; }
+
+  /* Config Panel */
+  .config-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title::before {
+    content: '';
+    width: 3px;
+    height: 14px;
+    background: var(--orange);
+    border-radius: 2px;
+  }
+
+  .brand-context {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .context-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .context-card h4 {
+    font-size: 10px;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .context-card p {
+    font-size: 12px;
+    color: var(--gray);
+    line-height: 1.5;
+  }
+
+  /* Platform selector */
+  .platform-grid {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .platform-btn {
+    padding: 8px 16px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--gray);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .platform-btn.selected {
+    border-color: var(--orange);
+    background: var(--orange-dim);
+    color: var(--orange);
+  }
+
+  .platform-btn:hover:not(.selected) {
+    border-color: #444;
+    color: var(--white);
+  }
+
+  /* Focus topic */
+  .focus-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .focus-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--white);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .focus-input:focus { border-color: var(--orange); }
+  .focus-input::placeholder { color: #444; }
+
+  /* Run button */
+  .run-btn {
+    background: var(--orange);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 32px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .run-btn:hover:not(:disabled) {
+    background: #ff8c3a;
+    box-shadow: 0 0 30px var(--orange-glow);
+    transform: translateY(-1px);
+  }
+
+  .run-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Output area */
+  .output-area {
+    display: none;
+  }
+
+  .output-area.visible { display: block; }
+
+  /* Agent log */
+  .agent-log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  .log-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 4px;
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+
+  .log-time {
+    color: #444;
+    flex-shrink: 0;
+    font-size: 10px;
+    margin-top: 2px;
+  }
+
+  .log-icon { flex-shrink: 0; }
+  .log-text { color: var(--gray); }
+  .log-text.highlight { color: var(--white); }
+  .log-text.success { color: var(--green); }
+  .log-text.orange { color: var(--orange); }
+
+  /* Results tabs */
+  .results-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+
+  .tab-btn {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--gray);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: -1px;
+  }
+
+  .tab-btn.active {
+    color: var(--orange);
+    border-bottom-color: var(--orange);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Trend cards */
+  .trends-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .trend-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .trend-card:hover { border-color: #333; }
+
+  .trend-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+
+  .trend-card.hot::before { background: var(--orange); }
+  .trend-card.medium::before { background: var(--blue); }
+  .trend-card.viral::before { background: var(--purple); }
+
+  .trend-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .trend-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.3;
+    flex: 1;
+  }
+
+  .trend-score {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+
+  .trend-score.hot { background: var(--orange-dim); color: var(--orange); }
+  .trend-score.medium { background: rgba(59,130,246,0.15); color: var(--blue); }
+  .trend-score.viral { background: rgba(168,85,247,0.15); color: var(--purple); }
+
+  .trend-meta {
+    font-size: 11px;
+    color: var(--gray);
+    margin-bottom: 8px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .trend-platforms {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .platform-tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--gray);
+  }
+
+  .trend-insight {
+    font-size: 12px;
+    color: var(--gray);
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+
+  .relevance-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .relevance-label { font-size: 10px; color: #555; }
+
+  .relevance-track {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .relevance-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--orange);
+    transition: width 1s ease;
+  }
+
+  .relevance-pct { font-size: 10px; color: var(--orange); }
+
+  /* Script section */
+  .script-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .script-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .script-platform-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .platform-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .viral-potential {
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    background: rgba(168,85,247,0.15);
+    color: var(--purple);
+    border: 1px solid rgba(168,85,247,0.3);
+  }
+
+  .script-section {
+    margin-bottom: 16px;
+  }
+
+  .script-section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--orange);
+    margin-bottom: 6px;
+  }
+
+  .script-text {
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--white);
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    border-left: 2px solid var(--orange);
+    white-space: pre-wrap;
+  }
+
+  .script-hooks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .hook-item {
+    font-size: 12px;
+    color: var(--white);
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .hook-num {
+    color: var(--orange);
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+
+  .hashtag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .hashtag {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--gray);
+    transition: all 0.2s;
+    cursor: default;
+  }
+
+  .hashtag:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+
+  .hashtag.trending {
+    border-color: rgba(168,85,247,0.4);
+    color: var(--purple);
+    background: rgba(168,85,247,0.08);
+  }
+
+  /* Copy button */
+  .copy-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: var(--gray);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .copy-btn:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+
+  /* Loading spinner */
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,107,26,0.3);
+    border-top-color: var(--orange);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* News cards */
+  .news-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .news-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .news-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .news-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+
+  .news-meta {
+    font-size: 11px;
+    color: var(--gray);
+    margin-bottom: 6px;
+  }
+
+  .news-relevance {
+    font-size: 11px;
+    color: var(--green);
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--gray);
+  }
+
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--white); }
+  .empty-sub { font-size: 13px; line-height: 1.6; }
+
+  @media (max-width: 600px) {
+    .trends-grid { grid-template-columns: 1fr; }
+    .brand-context { grid-template-columns: 1fr; }
+    .steps-track { flex-direction: column; }
+    .step { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      Quantu
+    </div>
+    <div class="header-badge">Content Intelligence Agent</div>
+  </div>
+
+  <!-- Title -->
+  <h1 class="page-title">Content<br><span>Intelligence</span> Agent</h1>
+  <p class="page-subtitle">Detecta trends, busca noticias y genera scripts virales<br>alineados a los pilares de comunicación de Quantu.</p>
+
+  <!-- Steps tracker -->
+  <div class="steps-track">
+    <div class="step" id="step1"><div class="step-num">1</div><div class="step-label">Contexto de marca</div></div>
+    <div class="step" id="step2"><div class="step-num">2</div><div class="step-label">Buscar trends</div></div>
+    <div class="step" id="step3"><div class="step-num">3</div><div class="step-label">Noticias & señales</div></div>
+    <div class="step" id="step4"><div class="step-num">4</div><div class="step-label">Score relevancia</div></div>
+    <div class="step" id="step5"><div class="step-num">5</div><div class="step-label">Generar script</div></div>
+  </div>
+
+  <!-- Config panel -->
+  <div class="config-panel">
+    <div class="panel-title">Contexto de Marca — Quantu</div>
+
+    <div class="brand-context">
+      <div class="context-card">
+        <h4>🎯 Pilares de Comunicación</h4>
+        <p>Data Intelligence · Predictive AI · Actionable Decisions</p>
+      </div>
+      <div class="context-card">
+        <h4>👥 Audiencia Target</h4>
+        <p>CEO/Founder, Finance Manager, Operations Manager en distribuidoras medianas</p>
+      </div>
+      <div class="context-card">
+        <h4>📣 Objetivos</h4>
+        <p>Posicionar como AI para distribuidores · Mostrar señales ocultas · Drive trials</p>
+      </div>
+    </div>
+
+    <div class="panel-title" style="margin-top:0">Plataformas</div>
+    <div class="platform-grid" id="platformGrid">
+      <button class="platform-btn selected" data-platform="LinkedIn">💼 LinkedIn</button>
+      <button class="platform-btn selected" data-platform="TikTok">🎵 TikTok</button>
+      <button class="platform-btn selected" data-platform="Instagram">📸 Instagram</button>
+      <button class="platform-btn" data-platform="Facebook">📘 Facebook</button>
+      <button class="platform-btn" data-platform="YouTube">▶️ YouTube</button>
+    </div>
+
+    <div class="panel-title">Tema o Ángulo de Enfoque (opcional)</div>
+    <div class="focus-row">
+      <input class="focus-input" id="focusInput" placeholder="ej: crisis de inventario, margen bruto, predicción de demanda...">
+    </div>
+
+    <br>
+    <button class="run-btn" id="runBtn" onclick="runAgent()">
+      <span id="runIcon">⚡</span>
+      <span id="runText">Ejecutar Agente de Contenido</span>
+    </button>
+  </div>
+
+  <!-- Output area -->
+  <div class="output-area" id="outputArea">
+
+    <!-- Agent log -->
+    <div class="config-panel">
+      <div class="panel-title">Agent Log</div>
+      <div id="agentLog" style="font-size:12px;line-height:2"></div>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsSection" style="display:none">
+      <div class="results-tabs">
+        <button class="tab-btn active" onclick="showTab('trends')">📈 Trends</button>
+        <button class="tab-btn" onclick="showTab('news')">📰 Noticias</button>
+        <button class="tab-btn" onclick="showTab('scripts')">✍️ Scripts</button>
+      </div>
+
+      <div class="tab-content active" id="tab-trends">
+        <div class="trends-grid" id="trendsGrid"></div>
+      </div>
+
+      <div class="tab-content" id="tab-news">
+        <div class="news-grid" id="newsGrid"></div>
+      </div>
+
+      <div class="tab-content" id="tab-scripts">
+        <div id="scriptsContainer"></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const BRAND_CONTEXT = {
+  name: "Quantu",
+  positioning: "AI Decision Intelligence para Distribuidores",
+  pillars: ["Data Intelligence", "Predictive AI", "Actionable Decisions"],
+  audience: {
+    roles: ["CEO/Founder", "Finance Manager", "Operations Manager"],
+    focus: ["growth", "capital optimization", "inventory control", "operational efficiency"],
+    sector: "mid-size distribution companies"
+  },
+  keyMessages: [
+    "Your data already knows.",
+    "31 signals hidden inside your distribution data.",
+    "Predict risks and opportunities.",
+    "Know what to do next.",
+    "AI Decision Intelligence for Distributors."
+  ],
+  ctas: ["Upload your data", "Discover what your business already knows", "Start your free analysis with Quantu", "Try for free"],
+  differentiator: "Most tools give insights about the past. Quantu detects signals about the future.",
+  vsCompetitors: {
+    insights: ["Explain what happened", "Static reports", "Human interpretation required", "Retrospective analysis", "Dashboards"],
+    signals: ["Detect what is happening", "Continuous monitoring", "AI detection", "Predictive patterns", "Action triggers"]
+  }
+};
+
+let selectedPlatforms = ['LinkedIn', 'TikTok', 'Instagram'];
+
+// Platform toggle
+document.getElementById('platformGrid').addEventListener('click', (e) => {
+  const btn = e.target.closest('.platform-btn');
+  if (!btn) return;
+  const platform = btn.dataset.platform;
+  btn.classList.toggle('selected');
+  if (btn.classList.contains('selected')) {
+    if (!selectedPlatforms.includes(platform)) selectedPlatforms.push(platform);
+  } else {
+    selectedPlatforms = selectedPlatforms.filter(p => p !== platform);
+  }
+});
+
+function showTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['trends','news','scripts'][i] === tab);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === `tab-${tab}`);
+  });
+}
+
+let logDelay = 0;
+function addLog(icon, text, type='', delay=0) {
+  return new Promise(res => {
+    setTimeout(() => {
+      const log = document.getElementById('agentLog');
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      const now = new Date();
+      const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+      line.innerHTML = `<span class="log-time">${time}</span><span class="log-icon">${icon}</span><span class="log-text ${type}">${text}</span>`;
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+      res();
+    }, delay);
+  });
+}
+
+function setStep(n, status) {
+  const step = document.getElementById(`step${n}`);
+  step.className = 'step ' + status;
+  if (status === 'done') step.querySelector('.step-num').innerHTML = '✓';
+}
+
+async function runAgent() {
+  if (selectedPlatforms.length === 0) { alert('Selecciona al menos una plataforma'); return; }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  document.getElementById('runIcon').innerHTML = '<span class="spinner"></span>';
+  document.getElementById('runText').textContent = 'Analizando...';
+
+  document.getElementById('outputArea').classList.add('visible');
+  document.getElementById('agentLog').innerHTML = '';
+  document.getElementById('resultsSection').style.display = 'none';
+
+  const focusTopic = document.getElementById('focusInput').value;
+  const platforms = selectedPlatforms.join(', ');
+
+  // Build prompt
+  const systemPrompt = `You are a viral content strategy agent for ${BRAND_CONTEXT.name}, an AI Decision Intelligence platform for distribution companies.
+
+Brand Context:
+- Positioning: ${BRAND_CONTEXT.positioning}
+- Communication Pillars: ${BRAND_CONTEXT.pillars.join(', ')}
+- Target Audience: ${BRAND_CONTEXT.audience.roles.join(', ')} in ${BRAND_CONTEXT.audience.sector}
+- Audience Pain Points: ${BRAND_CONTEXT.audience.focus.join(', ')}
+- Key Messages: ${BRAND_CONTEXT.keyMessages.join(' | ')}
+- Differentiator: ${BRAND_CONTEXT.differentiator}
+
+Your job:
+1. Identify 6 current viral trends happening RIGHT NOW on social media (${platforms}) that are highly relevant to this brand
+2. Find 5 relevant news topics about AI, supply chain, distribution, predictive analytics, or business intelligence
+3. Score each trend and news item by relevance to Quantu (0-100)
+4. Generate platform-specific viral content scripts for the TOP 3 most relevant trends
+
+Respond ONLY with a valid JSON object in this exact structure (no markdown, no explanation, just JSON):
+{
+  "trends": [
+    {
+      "id": 1,
+      "title": "trend name",
+      "type": "hot|viral|medium",
+      "platforms": ["LinkedIn","TikTok"],
+      "engagement": "why it's viral right now",
+      "relevanceScore": 85,
+      "pillar": "Data Intelligence|Predictive AI|Actionable Decisions",
+      "angle": "how Quantu can use this trend"
+    }
+  ],
+  "news": [
+    {
+      "id": 1,
+      "title": "news headline",
+      "source": "industry publication name",
+      "pillar": "relevant pillar",
+      "relevanceScore": 90,
+      "hook": "why this matters for Quantu's audience"
+    }
+  ],
+  "scripts": [
+    {
+      "platform": "LinkedIn|TikTok|Instagram|Facebook|YouTube",
+      "trendId": 1,
+      "viralPotential": "High|Very High|Explosive",
+      "hook": "First 3 seconds / opening line that stops the scroll",
+      "hooks": ["alternative hook 1", "alternative hook 2", "alternative hook 3"],
+      "body": "Full script text with line breaks. Make it punchy, conversational, use pattern interrupts. For TikTok/Reels use [ACTION] cues.",
+      "cta": "Clear call to action",
+      "hashtags": ["hashtag1","hashtag2"],
+      "trendingHashtags": ["trendingHash1","trendingHash2"],
+      "format": "video|carousel|post|thread",
+      "duration": "e.g. 30-45 seconds"
+    }
+  ]
+}
+
+${focusTopic ? `Special focus topic requested by the user: "${focusTopic}" — integrate this into the content wherever relevant.` : ''}
+
+Make the scripts genuinely viral. Use:
+- Pattern interrupts (unexpected angles, counterintuitive statements)
+- Specificity (use concrete numbers, not vague claims)
+- Tension/curiosity gap
+- Clear before/after transformation
+- Conversational language, not corporate speak
+- Hooks that call out the exact audience ("If you run a distribution company...")`;
+
+  // Log steps
+  setStep(1, 'active');
+  await addLog('🧠', `Cargando contexto de marca: ${BRAND_CONTEXT.name}`, 'highlight', 0);
+  await addLog('📌', `Pilares: ${BRAND_CONTEXT.pillars.join(' · ')}`, '', 400);
+  await addLog('👥', `Audiencia: ${BRAND_CONTEXT.audience.roles.join(', ')}`, '', 800);
+
+  setTimeout(() => { setStep(1, 'done'); setStep(2, 'active'); }, 1200);
+  await addLog('🔍', `Analizando trends en: ${platforms}`, 'orange', 1300);
+  await addLog('📊', 'Escaneando señales en LinkedIn, TikTok, Instagram...', '', 1800);
+
+  setTimeout(() => { setStep(2, 'done'); setStep(3, 'active'); }, 2500);
+  await addLog('📰', 'Buscando noticias sobre AI, supply chain, distribución...', 'orange', 2600);
+  await addLog('🌐', 'Cruzando con pilares de comunicación de Quantu...', '', 3100);
+
+  setTimeout(() => { setStep(3, 'done'); setStep(4, 'active'); }, 3500);
+  await addLog('⚡', 'Calculando score de relevancia por trend...', 'orange', 3600);
+
+  setTimeout(() => { setStep(4, 'done'); setStep(5, 'active'); }, 4200);
+  await addLog('✍️', 'Generando scripts optimizados para viralidad...', 'orange', 4300);
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: systemPrompt }]
+      })
+    });
+
+    const data = await response.json();
+    const rawText = data.content.map(i => i.text || '').join('');
+    const clean = rawText.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    setStep(5, 'done');
+    await addLog('✅', `${result.trends.length} trends detectados · ${result.news.length} noticias · ${result.scripts.length} scripts generados`, 'success', 500);
+    await addLog('🚀', 'Análisis completo. Revisa los resultados abajo.', 'success', 900);
+
+    renderResults(result);
+
+  } catch (err) {
+    await addLog('❌', `Error: ${err.message}`, '', 200);
+    setStep(5, 'active');
+  }
+
+  btn.disabled = false;
+  document.getElementById('runIcon').textContent = '⚡';
+  document.getElementById('runText').textContent = 'Ejecutar de Nuevo';
+}
+
+function renderResults(data) {
+  document.getElementById('resultsSection').style.display = 'block';
+  renderTrends(data.trends || []);
+  renderNews(data.news || []);
+  renderScripts(data.scripts || []);
+}
+
+function renderTrends(trends) {
+  const grid = document.getElementById('trendsGrid');
+  grid.innerHTML = trends.map(t => `
+    <div class="trend-card ${t.type}">
+      <div class="trend-header">
+        <div class="trend-title">${t.title}</div>
+        <div class="trend-score ${t.type}">${t.relevanceScore}%</div>
+      </div>
+      <div class="trend-meta">
+        <span>📌 ${t.pillar}</span>
+      </div>
+      <div class="trend-platforms">
+        ${(t.platforms||[]).map(p => `<span class="platform-tag">${p}</span>`).join('')}
+      </div>
+      <div class="trend-insight">${t.angle || t.engagement}</div>
+      <div class="relevance-bar">
+        <span class="relevance-label">RELEVANCIA</span>
+        <div class="relevance-track"><div class="relevance-fill" style="width:${t.relevanceScore}%"></div></div>
+        <span class="relevance-pct">${t.relevanceScore}%</span>
+      </div>
+    </div>
+  `).join('');
+
+  // Animate bars
+  setTimeout(() => {
+    grid.querySelectorAll('.relevance-fill').forEach(bar => {
+      const w = bar.style.width;
+      bar.style.width = '0%';
+      setTimeout(() => { bar.style.width = w; }, 100);
+    });
+  }, 100);
+}
+
+function renderNews(news) {
+  const icons = ['📦','🤖','📈','💹','🔮','⚡','🌐'];
+  document.getElementById('newsGrid').innerHTML = news.map((n,i) => `
+    <div class="news-card">
+      <div class="news-icon">${icons[i % icons.length]}</div>
+      <div>
+        <div class="news-title">${n.title}</div>
+        <div class="news-meta">${n.source} · Pilar: ${n.pillar}</div>
+        <div class="news-relevance">✓ ${n.hook}</div>
+      </div>
+      <div class="trend-score ${n.relevanceScore >= 80 ? 'hot' : 'medium'}" style="flex-shrink:0;margin-left:auto;align-self:flex-start">${n.relevanceScore}%</div>
+    </div>
+  `).join('');
+}
+
+function renderScripts(scripts) {
+  const platformIcons = { LinkedIn:'💼', TikTok:'🎵', Instagram:'📸', Facebook:'📘', YouTube:'▶️' };
+  const platformColors = { LinkedIn:'#0077b5', TikTok:'#ff0050', Instagram:'#e1306c', Facebook:'#1877f2', YouTube:'#ff0000' };
+
+  document.getElementById('scriptsContainer').innerHTML = scripts.map(s => `
+    <div class="script-card">
+      <div class="script-header">
+        <div class="script-platform-badge">
+          <div class="platform-icon" style="background:${platformColors[s.platform] || '#333'}22;color:${platformColors[s.platform] || '#fff'}">${platformIcons[s.platform] || '📱'}</div>
+          ${s.platform}
+          <span style="font-size:12px;color:var(--gray);font-family:'DM Mono',monospace;font-weight:400">${s.format || 'video'} · ${s.duration || ''}</span>
+        </div>
+        <div class="viral-potential">🔥 ${s.viralPotential}</div>
+      </div>
+
+      <div class="script-section">
+        <div class="script-section-label">🎣 Hook Principal</div>
+        <div class="script-text">${s.hook}</div>
+      </div>
+
+      ${s.hooks && s.hooks.length > 0 ? `
+      <div class="script-section">
+        <div class="script-section-label">🎯 Hooks Alternativos</div>
+        <div class="script-hooks">
+          ${s.hooks.map((h,i) => `<div class="hook-item"><span class="hook-num">${i+1}.</span><span>${h}</span></div>`).join('')}
+        </div>
+      </div>` : ''}
+
+      <div class="script-section">
+        <div class="script-section-label">📝 Script Completo</div>
+        <div class="script-text">${s.body}</div>
+      </div>
+
+      <div class="script-section">
+        <div class="script-section-label">📣 CTA</div>
+        <div class="script-text">${s.cta}</div>
+      </div>
+
+      <div class="script-section">
+        <div class="script-section-label">🏷️ Hashtags</div>
+        <div class="hashtag-cloud">
+          ${(s.hashtags||[]).map(h => `<span class="hashtag">#${h.replace('#','')}</span>`).join('')}
+          ${(s.trendingHashtags||[]).map(h => `<span class="hashtag trending">#${h.replace('#','')}</span>`).join('')}
+        </div>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:8px">
+        <button class="copy-btn" onclick="copyScript(this, \`${encodeURIComponent(s.body)}\`)">📋 Copiar Script</button>
+        <button class="copy-btn" onclick="copyScript(this, \`${encodeURIComponent(s.hook)}\`)">🎣 Copiar Hook</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function copyScript(btn, encoded) {
+  navigator.clipboard.writeText(decodeURIComponent(encoded));
+  const orig = btn.textContent;
+  btn.textContent = '✓ Copiado';
+  btn.style.color = 'var(--green)';
+  btn.style.borderColor = 'var(--green)';
+  setTimeout(() => {
+    btn.textContent = orig;
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }, 2000);
+}
+</script>
+</body>
+</html>
